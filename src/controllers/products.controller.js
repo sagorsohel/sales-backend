@@ -1,188 +1,231 @@
-import { products } from "../data/mockData.js";
+import { eq, like, or } from "drizzle-orm";
+import { db } from "../db/index.js";
+import { productsTable } from "../db/schema.js";
 
 // GET /api/products
-export const getProducts = (req, res) => {
-  const { category, search } = req.query;
-  let filtered = [...products];
+export const getProducts = async (req, res) => {
+  try {
+    const { category, search } = req.query;
+    let allProducts = await db.select().from(productsTable);
 
-  if (category && category !== "All") {
-    filtered = filtered.filter(
-      (p) => p.category.toLowerCase() === category.toLowerCase()
-    );
+    if (category && category !== "All") {
+      allProducts = allProducts.filter(
+        (p) => p.category?.toLowerCase() === category.toLowerCase()
+      );
+    }
+
+    if (search) {
+      const term = search.toLowerCase();
+      allProducts = allProducts.filter(
+        (p) =>
+          p.name?.toLowerCase().includes(term) ||
+          p.description?.toLowerCase().includes(term)
+      );
+    }
+
+    res.status(200).json({
+      success: true,
+      count: allProducts.length,
+      data: allProducts,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
-
-  if (search) {
-    const term = search.toLowerCase();
-    filtered = filtered.filter(
-      (p) =>
-        p.name.toLowerCase().includes(term) ||
-        p.description.toLowerCase().includes(term)
-    );
-  }
-
-  res.status(200).json({
-    success: true,
-    count: filtered.length,
-    data: filtered,
-  });
 };
 
 // GET /api/products/:id
-export const getProductById = (req, res) => {
-  const { id } = req.params;
-  const product = products.find((p) => p.id === id);
+export const getProductById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [product] = await db
+      .select()
+      .from(productsTable)
+      .where(eq(productsTable.id, id));
 
-  if (!product) {
-    return res.status(404).json({
-      success: false,
-      message: `Product with ID ${id} not found`,
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: `Product with ID ${id} not found`,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: product,
     });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
-
-  res.status(200).json({
-    success: true,
-    data: product,
-  });
 };
 
 // POST /api/products
-export const createProduct = (req, res) => {
-  const {
-    name,
-    description = "",
-    regularPrice,
-    salePrice,
-    category,
-    stock = 0,
-    featuredImage = "",
-    galleryImages = [],
-    benefits = [],
-    facilities = [],
-    seoTitle,
-    seoDescription,
-    seoImage,
-    icon = "📦",
-  } = req.body;
+export const createProduct = async (req, res) => {
+  try {
+    const {
+      name,
+      description = "",
+      regularPrice,
+      salePrice,
+      category,
+      stock = 0,
+      featuredImage = "",
+      galleryImages = [],
+      benefits = [],
+      facilities = [],
+      seoTitle,
+      seoDescription,
+      seoImage,
+      icon = "📦",
+    } = req.body;
 
-  if (!name || salePrice === undefined || !category) {
-    return res.status(400).json({
-      success: false,
-      message: "Name, sale price, and category are required fields.",
+    if (!name || salePrice === undefined || !category) {
+      return res.status(400).json({
+        success: false,
+        message: "Name, sale price, and category are required fields.",
+      });
+    }
+
+    const numRegularPrice = Number(regularPrice) || Number(salePrice);
+    const numSalePrice = Number(salePrice);
+    const discount =
+      numRegularPrice > numSalePrice
+        ? Math.round(((numRegularPrice - numSalePrice) / numRegularPrice) * 100)
+        : 0;
+
+    const slug = name
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/[\s_-]+/g, "-");
+
+    const autoSeoTitle = seoTitle?.trim() || `${name} | WideTech Enterprise`;
+    const autoSeoDescription =
+      seoDescription?.trim() || description.slice(0, 160);
+    const autoSeoImage = seoImage?.trim() || featuredImage || "";
+
+    const newProduct = {
+      id: `prod-${Date.now()}`,
+      name: name.trim(),
+      slug,
+      description,
+      regularPrice: numRegularPrice,
+      salePrice: numSalePrice,
+      discountPercentage: discount,
+      category,
+      stock: Number(stock) || 0,
+      featuredImage,
+      galleryImages: Array.isArray(galleryImages) ? galleryImages : [],
+      benefits: Array.isArray(benefits) ? benefits : [],
+      facilities: Array.isArray(facilities) ? facilities : [],
+      seoTitle: autoSeoTitle,
+      seoDescription: autoSeoDescription,
+      seoImage: autoSeoImage,
+      status: "Active",
+      rating: 5.0,
+      salesCount: 0,
+      icon,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    await db.insert(productsTable).values(newProduct);
+
+    res.status(201).json({
+      success: true,
+      message: "Product created successfully in MySQL database",
+      data: newProduct,
     });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
-
-  const numRegularPrice = Number(regularPrice) || Number(salePrice);
-  const numSalePrice = Number(salePrice);
-  const discount =
-    numRegularPrice > numSalePrice
-      ? Math.round(((numRegularPrice - numSalePrice) / numRegularPrice) * 100)
-      : 0;
-
-  const slug = name
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/[\s_-]+/g, "-");
-
-  // Auto SEO values if not provided
-  const autoSeoTitle = seoTitle?.trim() || `${name} | WideTech Enterprise`;
-  const autoSeoDescription =
-    seoDescription?.trim() || description.slice(0, 160);
-  const autoSeoImage = seoImage?.trim() || featuredImage || "";
-
-  const newProduct = {
-    id: `prod-${Date.now()}`,
-    name,
-    slug,
-    description,
-    regularPrice: numRegularPrice,
-    salePrice: numSalePrice,
-    discountPercentage: discount,
-    category,
-    stock: Number(stock) || 0,
-    featuredImage,
-    galleryImages: Array.isArray(galleryImages) ? galleryImages : [],
-    benefits: Array.isArray(benefits) ? benefits : [],
-    facilities: Array.isArray(facilities) ? facilities : [],
-    seoTitle: autoSeoTitle,
-    seoDescription: autoSeoDescription,
-    seoImage: autoSeoImage,
-    status: "Active",
-    rating: 5.0,
-    salesCount: 0,
-    icon,
-    createdAt: new Date().toISOString(),
-  };
-
-  products.unshift(newProduct);
-
-  res.status(201).json({
-    success: true,
-    message: "Product created successfully",
-    data: newProduct,
-  });
 };
 
 // PUT /api/products/:id
-export const updateProduct = (req, res) => {
-  const { id } = req.params;
-  const index = products.findIndex((p) => p.id === id);
+export const updateProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [existing] = await db
+      .select()
+      .from(productsTable)
+      .where(eq(productsTable.id, id));
 
-  if (index === -1) {
-    return res.status(404).json({
-      success: false,
-      message: `Product with ID ${id} not found`,
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        message: `Product with ID ${id} not found`,
+      });
+    }
+
+    const regularPrice =
+      req.body.regularPrice !== undefined
+        ? Number(req.body.regularPrice)
+        : existing.regularPrice;
+    const salePrice =
+      req.body.salePrice !== undefined
+        ? Number(req.body.salePrice)
+        : existing.salePrice;
+
+    const discount =
+      regularPrice > salePrice
+        ? Math.round(((regularPrice - salePrice) / regularPrice) * 100)
+        : 0;
+
+    const updates = {
+      ...req.body,
+      regularPrice,
+      salePrice,
+      discountPercentage: discount,
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Remove immutable fields if passed
+    delete updates.id;
+    delete updates.createdAt;
+
+    await db
+      .update(productsTable)
+      .set(updates)
+      .where(eq(productsTable.id, id));
+
+    const [updated] = await db
+      .select()
+      .from(productsTable)
+      .where(eq(productsTable.id, id));
+
+    res.status(200).json({
+      success: true,
+      message: "Product updated successfully in MySQL",
+      data: updated,
     });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
-
-  const current = products[index];
-  const regularPrice =
-    req.body.regularPrice !== undefined
-      ? Number(req.body.regularPrice)
-      : current.regularPrice;
-  const salePrice =
-    req.body.salePrice !== undefined
-      ? Number(req.body.salePrice)
-      : current.salePrice;
-
-  const discount =
-    regularPrice > salePrice
-      ? Math.round(((regularPrice - salePrice) / regularPrice) * 100)
-      : 0;
-
-  products[index] = {
-    ...current,
-    ...req.body,
-    regularPrice,
-    salePrice,
-    discountPercentage: discount,
-    updatedAt: new Date().toISOString(),
-  };
-
-  res.status(200).json({
-    success: true,
-    message: "Product updated successfully",
-    data: products[index],
-  });
 };
 
 // DELETE /api/products/:id
-export const deleteProduct = (req, res) => {
-  const { id } = req.params;
-  const index = products.findIndex((p) => p.id === id);
+export const deleteProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [existing] = await db
+      .select()
+      .from(productsTable)
+      .where(eq(productsTable.id, id));
 
-  if (index === -1) {
-    return res.status(404).json({
-      success: false,
-      message: `Product with ID ${id} not found`,
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        message: `Product with ID ${id} not found`,
+      });
+    }
+
+    await db.delete(productsTable).where(eq(productsTable.id, id));
+
+    res.status(200).json({
+      success: true,
+      message: "Product deleted successfully from MySQL",
+      data: existing,
     });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
-
-  const deleted = products.splice(index, 1)[0];
-
-  res.status(200).json({
-    success: true,
-    message: "Product deleted successfully",
-    data: deleted,
-  });
 };
