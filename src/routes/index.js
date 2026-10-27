@@ -1,5 +1,6 @@
 import { Router } from "express";
 import productsRouter from "./products.routes.js";
+import categoriesRouter from "./categories.routes.js";
 import ordersRouter from "./orders.routes.js";
 import analyticsRouter from "./analytics.routes.js";
 
@@ -15,6 +16,7 @@ apiRouter.get("/health", (req, res) => {
   });
 });
 
+apiRouter.use("/categories", categoriesRouter);
 apiRouter.use("/products", productsRouter);
 apiRouter.use("/orders", ordersRouter);
 apiRouter.use("/analytics", analyticsRouter);

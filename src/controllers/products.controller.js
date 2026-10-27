@@ -47,26 +47,70 @@ export const getProductById = (req, res) => {
 
 // POST /api/products
 export const createProduct = (req, res) => {
-  const { name, description, price, category, stock, icon } = req.body;
+  const {
+    name,
+    description = "",
+    regularPrice,
+    salePrice,
+    category,
+    stock = 0,
+    featuredImage = "",
+    galleryImages = [],
+    benefits = [],
+    facilities = [],
+    seoTitle,
+    seoDescription,
+    seoImage,
+    icon = "📦",
+  } = req.body;
 
-  if (!name || !price || !category) {
+  if (!name || salePrice === undefined || !category) {
     return res.status(400).json({
       success: false,
-      message: "Name, price, and category are required fields.",
+      message: "Name, sale price, and category are required fields.",
     });
   }
+
+  const numRegularPrice = Number(regularPrice) || Number(salePrice);
+  const numSalePrice = Number(salePrice);
+  const discount =
+    numRegularPrice > numSalePrice
+      ? Math.round(((numRegularPrice - numSalePrice) / numRegularPrice) * 100)
+      : 0;
+
+  const slug = name
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_-]+/g, "-");
+
+  // Auto SEO values if not provided
+  const autoSeoTitle = seoTitle?.trim() || `${name} | WideTech Enterprise`;
+  const autoSeoDescription =
+    seoDescription?.trim() || description.slice(0, 160);
+  const autoSeoImage = seoImage?.trim() || featuredImage || "";
 
   const newProduct = {
     id: `prod-${Date.now()}`,
     name,
-    description: description || "",
-    price: Number(price),
+    slug,
+    description,
+    regularPrice: numRegularPrice,
+    salePrice: numSalePrice,
+    discountPercentage: discount,
     category,
     stock: Number(stock) || 0,
+    featuredImage,
+    galleryImages: Array.isArray(galleryImages) ? galleryImages : [],
+    benefits: Array.isArray(benefits) ? benefits : [],
+    facilities: Array.isArray(facilities) ? facilities : [],
+    seoTitle: autoSeoTitle,
+    seoDescription: autoSeoDescription,
+    seoImage: autoSeoImage,
     status: "Active",
     rating: 5.0,
     salesCount: 0,
-    icon: icon || "📦",
+    icon,
     createdAt: new Date().toISOString(),
   };
 
@@ -91,9 +135,27 @@ export const updateProduct = (req, res) => {
     });
   }
 
+  const current = products[index];
+  const regularPrice =
+    req.body.regularPrice !== undefined
+      ? Number(req.body.regularPrice)
+      : current.regularPrice;
+  const salePrice =
+    req.body.salePrice !== undefined
+      ? Number(req.body.salePrice)
+      : current.salePrice;
+
+  const discount =
+    regularPrice > salePrice
+      ? Math.round(((regularPrice - salePrice) / regularPrice) * 100)
+      : 0;
+
   products[index] = {
-    ...products[index],
+    ...current,
     ...req.body,
+    regularPrice,
+    salePrice,
+    discountPercentage: discount,
     updatedAt: new Date().toISOString(),
   };
 
