@@ -145,13 +145,6 @@ export let products = [
     icon: "🍳",
     createdAt: "2026-02-05T12:00:00Z",
   },
-    stock: 80,
-    status: "Active",
-    rating: 4.8,
-    salesCount: 2150,
-    icon: "🛡️",
-    createdAt: "2026-02-18T14:20:00Z",
-  },
   {
     id: "prod-4",
     name: "High-Throughput API Gateway",
