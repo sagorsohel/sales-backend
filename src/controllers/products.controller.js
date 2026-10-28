@@ -37,15 +37,22 @@ export const getProducts = async (req, res) => {
 export const getProductById = async (req, res) => {
   try {
     const { id } = req.params;
-    const [product] = await db
+    let [product] = await db
       .select()
       .from(productsTable)
       .where(eq(productsTable.id, id));
 
     if (!product) {
+      [product] = await db
+        .select()
+        .from(productsTable)
+        .where(eq(productsTable.slug, id));
+    }
+
+    if (!product) {
       return res.status(404).json({
         success: false,
-        message: `Product with ID ${id} not found`,
+        message: `Product with ID or slug '${id}' not found`,
       });
     }
 

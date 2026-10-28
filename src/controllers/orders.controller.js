@@ -19,20 +19,38 @@ export const getOrders = async (req, res) => {
 // POST /api/orders
 export const createOrder = async (req, res) => {
   try {
-    const { customer, email, items, totalAmount } = req.body;
+    const { customer, email, phone, address, deliveryFee, items, totalAmount } = req.body;
 
-    if (!customer || !email || !items || !items.length) {
+    if (!customer || (!email && !phone) || !items || !items.length) {
       return res.status(400).json({
         success: false,
-        message: "Customer name, email, and at least one item are required.",
+        message: "Customer name, mobile number or email, and order items are required.",
       });
     }
 
+    const orderEmail = email || `${phone?.replace(/\D/g, "") || "customer"}@order.bd`;
+    const customerDisplayName = phone ? `${customer} (${phone})` : customer;
+
+    // Attach shipping metadata into items for full visibility in admin panel
+    const enrichedItems = [
+      ...items,
+      ...(address || phone
+        ? [
+            {
+              isDeliveryInfo: true,
+              phone: phone || "",
+              deliveryAddress: address || "",
+              deliveryFee: Number(deliveryFee) || 0,
+            },
+          ]
+        : []),
+    ];
+
     const newOrder = {
       id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
-      customer,
-      email,
-      items,
+      customer: customerDisplayName,
+      email: orderEmail,
+      items: enrichedItems,
       totalAmount: Number(totalAmount) || 0,
       status: "Pending",
       date: new Date().toISOString(),
