@@ -74,9 +74,16 @@ export const createProduct = async (req, res) => {
       regularPrice,
       salePrice,
       category,
+      brand = "Prestige",
       stock = 0,
       featuredImage = "",
       galleryImages = [],
+      variants = [],
+      keyFeatures = [],
+      deliveryInside = 60,
+      deliveryOutside = 120,
+      phoneNumber = "0123456789",
+      whatsappNumber = "880123456789",
       benefits = [],
       facilities = [],
       seoTitle,
@@ -85,10 +92,10 @@ export const createProduct = async (req, res) => {
       icon = "📦",
     } = req.body;
 
-    if (!name || salePrice === undefined || !category) {
+    if (!name || salePrice === undefined) {
       return res.status(400).json({
         success: false,
-        message: "Name, sale price, and category are required fields.",
+        message: "Name and sale price are required fields.",
       });
     }
 
@@ -114,14 +121,21 @@ export const createProduct = async (req, res) => {
       id: `prod-${Date.now()}`,
       name: name.trim(),
       slug,
+      category: category?.trim() || "General",
+      brand: brand.trim() || "Prestige",
       description,
       regularPrice: numRegularPrice,
       salePrice: numSalePrice,
       discountPercentage: discount,
-      category,
       stock: Number(stock) || 0,
       featuredImage,
       galleryImages: Array.isArray(galleryImages) ? galleryImages : [],
+      variants: Array.isArray(variants) ? variants : [],
+      keyFeatures: Array.isArray(keyFeatures) ? keyFeatures : [],
+      deliveryInside: Number(deliveryInside) || 60,
+      deliveryOutside: Number(deliveryOutside) || 120,
+      phoneNumber: String(phoneNumber || "0123456789").trim(),
+      whatsappNumber: String(whatsappNumber || "880123456789").trim(),
       benefits: Array.isArray(benefits) ? benefits : [],
       facilities: Array.isArray(facilities) ? facilities : [],
       seoTitle: autoSeoTitle,
@@ -184,6 +198,16 @@ export const updateProduct = async (req, res) => {
       discountPercentage: discount,
       updatedAt: new Date().toISOString(),
     };
+
+    if (req.body.stock !== undefined) {
+      updates.stock = Number(req.body.stock) || 0;
+    }
+    if (req.body.deliveryInside !== undefined) {
+      updates.deliveryInside = Number(req.body.deliveryInside) || 60;
+    }
+    if (req.body.deliveryOutside !== undefined) {
+      updates.deliveryOutside = Number(req.body.deliveryOutside) || 120;
+    }
 
     // Remove immutable fields if passed
     delete updates.id;

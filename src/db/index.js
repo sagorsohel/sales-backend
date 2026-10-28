@@ -43,14 +43,21 @@ export async function initDb() {
         name VARCHAR(255) NOT NULL,
         slug VARCHAR(255) NOT NULL,
         category VARCHAR(255) NOT NULL,
+        brand VARCHAR(128) DEFAULT 'Prestige',
         regular_price DOUBLE NOT NULL,
         sale_price DOUBLE NOT NULL,
         discount_percentage INT DEFAULT 0,
         featured_image TEXT,
         gallery_images JSON,
+        variants JSON,
+        key_features JSON,
         description TEXT,
         benefits JSON,
         facilities JSON,
+        delivery_inside INT DEFAULT 60,
+        delivery_outside INT DEFAULT 120,
+        phone_number VARCHAR(64) DEFAULT '0123456789',
+        whatsapp_number VARCHAR(64) DEFAULT '880123456789',
         seo_title VARCHAR(255),
         seo_description TEXT,
         seo_image TEXT,
@@ -63,6 +70,25 @@ export async function initDb() {
         updated_at VARCHAR(128)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
+
+    // Ensure newly added columns exist if table was created previously
+    const extraCols = [
+      { name: "brand", def: "VARCHAR(128) DEFAULT 'Prestige'" },
+      { name: "variants", def: "JSON" },
+      { name: "key_features", def: "JSON" },
+      { name: "delivery_inside", def: "INT DEFAULT 60" },
+      { name: "delivery_outside", def: "INT DEFAULT 120" },
+      { name: "phone_number", def: "VARCHAR(64) DEFAULT '0123456789'" },
+      { name: "whatsapp_number", def: "VARCHAR(64) DEFAULT '880123456789'" },
+    ];
+    for (const col of extraCols) {
+      try {
+        const [c] = await conn.query(`SHOW COLUMNS FROM products LIKE '${col.name}'`);
+        if (c.length === 0) {
+          await conn.query(`ALTER TABLE products ADD COLUMN ${col.name} ${col.def}`);
+        }
+      } catch (_) {}
+    }
 
     await conn.query(`
       CREATE TABLE IF NOT EXISTS orders (

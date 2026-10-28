@@ -47,16 +47,36 @@ export let products = [
     name: "Prestige 3.0L Multi Purpose Cooker - All-in-One Cooking Solution!",
     slug: "prestige-3l-multi-purpose-cooker",
     category: "Kitchen & Home",
+    brand: "Prestige",
     regularPrice: 1499,
     salePrice: 999,
     discountPercentage: 33,
     featuredImage: "/products/cooker-blue-main.png",
     galleryImages: [
       "/products/thumb-red.png",
-      "/products/thumb-blue.png",
+      "/products/cooker-blue-main.png",
       "/products/thumb-yellow.png",
       "/products/thumb-green.png"
     ],
+    variants: [
+      { name: "Yellow (হলুদ)", slug: "yellow", image: "/products/thumb-yellow.png" },
+      { name: "Hot Pink (উজ্জ্বল গোলাপি)", slug: "hot-pink", image: "/products/thumb-red.png" },
+      { name: "Sky Blue (আকাশী নীল)", slug: "sky-blue", image: "/products/cooker-blue-main.png" },
+      { name: "Sea Green (সামুদ্রিক সবুজ)", slug: "sea-green", image: "/products/thumb-green.png" },
+      { name: "Baby Pink (হালকা গোলাপি)", slug: "baby-pink", image: "/products/thumb-red.png" },
+      { name: "Blood Red (রক্তিম লাল)", slug: "blood-red", image: "/products/thumb-red.png" }
+    ],
+    keyFeatures: [
+      "মডেল: Prestige Mukti Multi Purpose Cooker (3.0L)",
+      "পাওয়ার: 1500 Watt (দ্রুত রান্নার জন্য শক্তিশালী)",
+      "ধারণক্ষমতা: ৩.০ লিটার",
+      "প্যাকেজ: ১টি মাল্টি কুকার, ১টি স্টিমার পট, ১টি কাঁচের ঢাকনা এবং ফ্রি এক্সেসরিজ।",
+      "ওয়ারেন্টি: ১২ মাসের সার্ভিস ওয়ারেন্টি (কার্ড)"
+    ],
+    deliveryInside: 60,
+    deliveryOutside: 120,
+    phoneNumber: "0123456789",
+    whatsappNumber: "880123456789",
     description: "আপনার রান্নার কাজকে আরও সহজ এবং বৈচিত্র্যময় করতে নিয়ে এলো Prestige ৩.০ লিটার মাল্টি-পারপাস কুকার। এটি দিয়ে আপনি একই সাথে রান্না এবং ভাপে সেদ্ধ (Steaming) করার কাজ সেরে নিতে পারবেন।",
     benefits: [
       "মাল্টি-ফাংশনাল: নুডলস, ওটমিল, স্যুপ রান্না ছাড়াও স্টিমার দিয়ে মোমো, ডিম বা সবজি সেদ্ধ",
